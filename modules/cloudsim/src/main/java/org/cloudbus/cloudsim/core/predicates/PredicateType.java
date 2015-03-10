@@ -21,24 +21,15 @@ import org.cloudbus.cloudsim.core.SimEvent;
 public class PredicateType extends Predicate {
 
 	/** The tags. */
-	private final int[] tags;
+	private final int tags;
 
 	/**
-	 * Constructor used to select events with the tag value <code>t1</code>.
+	 * Constructor used to select events with the tag value <code>tags</code>.
 	 * 
-	 * @param t1 an event tag value
+	 * @param tags an event tag value
 	 */
-	public PredicateType(int t1) {
-		tags = new int[] { t1 };
-	}
-
-	/**
-	 * Constructor used to select events with a tag value equal to any of the specified tags.
-	 * 
-	 * @param tags the list of tags
-	 */
-	public PredicateType(int[] tags) {
-		this.tags = tags.clone();
+	public PredicateType(int tags) {
+		this.tags = tags;
 	}
 
 	/**
@@ -49,13 +40,6 @@ public class PredicateType extends Predicate {
 	 */
 	@Override
 	public boolean match(SimEvent ev) {
-		int tag = ev.getTag();
-		for (int tag2 : tags) {
-			if (tag == tag2) {
-				return true;
-			}
-		}
-		return false;
+		return tags == ev.getTag();
 	}
-
 }

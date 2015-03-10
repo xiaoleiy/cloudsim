@@ -82,7 +82,7 @@ public class NetworkSimulation extends AppCloudlet {
             // Datacenters are the resource providers in CloudSim. We need at
             // list one of them to run a CloudSim simulation
             NetworkDatacenter nwDatacenter1 = createDatacenter("Datacenter-1");
-            NetworkDatacenter nwDatacenter2 = createDatacenter("Datacenter-2");
+//            NetworkDatacenter nwDatacenter2 = createDatacenter("Datacenter-2");
 
             // Third step: Create Broker
             NetDatacenterBroker broker = createBroker();
