@@ -30,12 +30,12 @@ public class NetworkSimulation extends AppCloudlet {
     /**
      * The number of hosts
      */
-    private static final int NUM_HOSTS = 150;
+    private static final int NUM_HOSTS = 100;
 
     /**
      * The number of applications
      */
-    private static final int NUM_APPS = 3000;
+    private static final int NUM_APPS = 500;
 
     /**
      * The number of users
@@ -115,7 +115,7 @@ public class NetworkSimulation extends AppCloudlet {
         }
 
         long endTimestamp = System.currentTimeMillis();
-        LOGGER.info("Finished the network simulation within " + (endTimestamp - startTimestamp) / 60000 + " mins.");
+        LOGGER.info("Finished the network simulation within " + (endTimestamp - startTimestamp) / 1000 + "s.");
     }
 
     /**
