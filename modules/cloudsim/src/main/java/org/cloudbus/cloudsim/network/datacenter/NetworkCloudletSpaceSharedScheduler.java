@@ -29,6 +29,11 @@ import java.util.*;
  */
 public class NetworkCloudletSpaceSharedScheduler extends CloudletScheduler {
 
+	/**
+	 * The data center broker
+	 */
+	private final NetDatacenterBroker dcBroker;
+
 	/** The current CPUs. */
 	protected int currentCpus;
 
@@ -47,8 +52,9 @@ public class NetworkCloudletSpaceSharedScheduler extends CloudletScheduler {
 	 * 
 	 * @pre $none
 	 * @post $none
+	 * @param dcBroker The data center broker
 	 */
-	public NetworkCloudletSpaceSharedScheduler() {
+	public NetworkCloudletSpaceSharedScheduler(NetDatacenterBroker dcBroker) {
 		super();
 		cloudletWaitingList = new ArrayList<ResCloudlet>();
 		cloudletExecList = new ArrayList<ResCloudlet>();
@@ -58,6 +64,7 @@ public class NetworkCloudletSpaceSharedScheduler extends CloudletScheduler {
 		currentCpus = 0;
 		pkttosend = new HashMap<Integer, List<HostPacket>>();
 		pktrecv = new HashMap<Integer, List<HostPacket>>();
+		this.dcBroker = dcBroker;
 	}
 
 	/**
@@ -142,13 +149,13 @@ public class NetworkCloudletSpaceSharedScheduler extends CloudletScheduler {
 				cl.timetostartStage = CloudSim.clock();
 
 				if (cl.stages.get(0).type == NetworkConstants.EXECUTION) {
-					NetDatacenterBroker.linkDC.schedule(
-							NetDatacenterBroker.linkDC.getId(),
+					this.dcBroker.linkDC.schedule(
+							this.dcBroker.linkDC.getId(),
 							cl.stages.get(0).time,
 							CloudSimTags.VM_DATACENTER_EVENT);
 				} else {
-					NetDatacenterBroker.linkDC.schedule(
-							NetDatacenterBroker.linkDC.getId(),
+					this.dcBroker.linkDC.schedule(
+							this.dcBroker.linkDC.getId(),
 							0.0001,
 							CloudSimTags.VM_DATACENTER_EVENT);
 					// /sendstage///
@@ -258,19 +265,13 @@ public class NetworkCloudletSpaceSharedScheduler extends CloudletScheduler {
 				}
 
 			}
-			NetDatacenterBroker.linkDC.schedule(
-					NetDatacenterBroker.linkDC.getId(),
-					0.0001,
-					CloudSimTags.VM_DATACENTER_EVENT);
+			this.dcBroker.linkDC.schedule(this.dcBroker.linkDC.getId(), 0.0001, CloudSimTags.VM_DATACENTER_EVENT);
 			if (i == cl.stages.size()) {
 				cl.currStagenum = NetworkConstants.FINISH;
 			} else {
 				cl.currStagenum = i;
 				if (cl.stages.get(i).type == NetworkConstants.EXECUTION) {
-					NetDatacenterBroker.linkDC.schedule(
-							NetDatacenterBroker.linkDC.getId(),
-							cl.stages.get(i).time,
-							CloudSimTags.VM_DATACENTER_EVENT);
+					this.dcBroker.linkDC.schedule(dcBroker.linkDC.getId(), cl.stages.get(i).time, CloudSimTags.VM_DATACENTER_EVENT);
 				}
 
 			}

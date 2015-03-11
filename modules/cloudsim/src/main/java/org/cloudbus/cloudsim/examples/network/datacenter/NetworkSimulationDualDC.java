@@ -28,14 +28,16 @@ public class NetworkSimulationDualDC extends AppCloudlet {
     private static final int NUM_VMS = 5;
 
     /**
-     * The number of hosts
+     * The number of hosts for each data center, 2 VMs will be created for each host.
      */
-    private static final int NUM_HOSTS = 100;
+    private static final int NUM_HOSTS = 10;
 
     /**
-     * The number of applications
+     * The number of workflow applications (WorkFlowApp) for each VMs
+     * For each workflow application, there are 2 cloudlets being created (sender & receiver) separately hosted at 2 different VMs
+     * For each cloudlet, there are 1500 task stages created, which indicate 1500 packets being silumated.
      */
-    private static final int NUM_APPS = 1500;
+    private static final int NUM_APPS = 10;
 
     /**
      * The number of users
@@ -46,11 +48,6 @@ public class NetworkSimulationDualDC extends AppCloudlet {
      * indicate whether to trace event
      */
     private static final boolean FLAG_TRACE = false;
-
-    /**
-     * The vmlist.
-     */
-    private static List<NetworkVm> vmlist;
 
     /**
      * The constructor with given parameters
@@ -79,34 +76,30 @@ public class NetworkSimulationDualDC extends AppCloudlet {
             CloudSim.init(NUM_USERS, Calendar.getInstance(), FLAG_TRACE);
 
             // Second step: Create Datacenters
-            // Datacenters are the resource providers in CloudSim. We need at
-            // list one of them to run a CloudSim simulation
-            NetworkDatacenter nwDatacenter1 = createDatacenter("Datacenter-1");
-//            NetworkDatacenter nwDatacenter2 = createDatacenter("Datacenter-2");
+            // Datacenters are the resource providers in CloudSim.
+            NetworkDatacenter nwDatacenter01 = createDatacenter("Datacenter-01");
+            NetworkDatacenter nwDatacenter02 = createDatacenter("Datacenter-02");
 
-            // Third step: Create Broker
-            NetDatacenterBroker broker = createBroker();
-            broker.setLinkDC(nwDatacenter1);
-//            broker.setLinkDC(nwDatacenter2);
+            // Third step: Create Brokers for separte datacenters
+            NetDatacenterBroker broker01 = createBroker("Broker-01");
+            broker01.setLinkDC(nwDatacenter01);
 
-            //NetworkSimulation networkSimulation = new NetworkSimulation(0,24,1000.00,NUM_VMS);
-            // Fifth step: Create one Cloudlet
-            //networkSimulation.createCloudletList(VM_IDS);
-            //vmlist = new ArrayList<NetworkVm>();
-            // submit vm list to the broker
-            //broker.submitVmList(vmlist);
-
+            NetDatacenterBroker broker02 = createBroker("Broker-02");
+            broker02.setLinkDC(nwDatacenter02);
 
             // Sixth step: Starts the simulation
             CloudSim.startSimulation();
             CloudSim.stopSimulation();
 
             // Final step: Print results when simulation is over
-            List<Cloudlet> newList = broker.getCloudletReceivedList();
-            //printCloudletList(newList);
-            //printCloudletNWStats(newList);
+            List<Cloudlet> recvCloudletsForDC01 = broker01.getCloudletReceivedList();
+            List<Cloudlet> recvCloudletsForDC02 = broker02.getCloudletReceivedList();
 
-            LOGGER.info("Number of cloudlets: " + newList.size() +
+            LOGGER.info(nwDatacenter01.getName() + " -- Number of cloudlets: " + recvCloudletsForDC01.size() +
+                    ", Cached " + NetDatacenterBroker.cachedcloudlet +
+                    ", Data transfered " + NetworkConstants.totaldatatransfer);
+
+            LOGGER.info(nwDatacenter02.getName() + " -- Number of cloudlets: " + recvCloudletsForDC02.size() +
                     ", Cached " + NetDatacenterBroker.cachedcloudlet +
                     ", Data transfered " + NetworkConstants.totaldatatransfer);
 
@@ -129,14 +122,17 @@ public class NetworkSimulationDualDC extends AppCloudlet {
         // Here are the steps needed to create a PowerDatacenter:
         // 1. We need to create a list to store
         // our machine
-
         List<NetworkHost> hostList = new ArrayList<NetworkHost>();
 
         // 2. A Machine contains one or more PEs or CPUs/Cores.
         // In this example, it will have only one core.
         // List<Pe> peList = new ArrayList<Pe>();
-
-        int mips = 1;
+        /**
+         * Updated by xiaoleiy: increase mips from 1 to 100 for dual DCs,
+         * otherwise error will be occurred due to insufficient available mips resource
+         * when creating VMs.
+         */
+        int mips = 100;
 
         // 3. Create PEs and add these into a list.
         // peList.add(new Pe(0, new PeProvisionerSimple(mips))); // need to
@@ -252,7 +248,7 @@ public class NetworkSimulationDualDC extends AppCloudlet {
                     new NetworkVmAllocationPolicy(hostList),
                     storageList,
                     0);
-            LOGGER.info("Created data center: " + name + ", with " + hostList.size() + " hosts, 8 PEs");
+            LOGGER.info("Created data center: " + name + " # " + datacenter.getId() + " , with " + hostList.size() + " hosts, 8 PEs");
         } catch (Exception e) {
             LOGGER.error("Failed to create data center due to exception: ", e);
         }
@@ -269,11 +265,12 @@ public class NetworkSimulationDualDC extends AppCloudlet {
      * Creates the broker.
      *
      * @return the datacenter broker
+     * @param brokerName
      */
-    private static NetDatacenterBroker createBroker() {
+    private static NetDatacenterBroker createBroker(String brokerName) {
         NetDatacenterBroker broker = null;
         try {
-            broker = new NetDatacenterBroker("Broker");
+            broker = new NetDatacenterBroker(brokerName);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -335,47 +332,14 @@ public class NetworkSimulationDualDC extends AppCloudlet {
     }
 */
 
+    /**
+     * Updated by xiaoleiy: empty this method since it is not executed actually.
+     *
+     * @param vmIdList VMs where Cloudlet will be executed
+     */
     @Override
     public void createCloudletList(List<Integer> vmIdList) {
-        //On each VM create one cloudlet that sends some data and
-        //waits to receive some data from its peer.
-        int pesNumber = NetworkConstants.PES_NUMBER;
-        long outputSize = NetworkConstants.OUTPUT_SIZE;
-        long memory = 1000;
-        int executionTime = getExecTime();
-        UtilizationModel utilizationModel = new UtilizationModelFull();
-
-        for (int idx = 0; idx < NUM_VMS; idx++) {
-            long dataSize = randInt(1, 1000) * 1024;
-            NetworkCloudlet cl = new NetworkCloudlet(NetworkConstants.currentCloudletId, executionTime / vmIdList.size(),
-                    pesNumber, dataSize, outputSize, memory,
-                    utilizationModel, utilizationModel, utilizationModel);
-            NetworkConstants.currentCloudletId++;
-            //TODO: Need a decent explanation for this value
-            cl.setUserId(0);
-
-            cl.submittime = CloudSim.clock();
-            cl.currStagenum = -1;
-            cl.setVmId(vmIdList.get(idx));
-            for (int i = 0; i < NUM_VMS; i++) {
-                //Adding one TASKSTAGE to send data and another to receive
-                int stgId = 0;
-                for (int jIdx = 0; jIdx < NUM_VMS; jIdx++) {
-                    if (idx != jIdx) {
-                        cl.stages.add(new TaskStage(NetworkConstants.WAIT_SEND, dataSize, 0, stgId++,
-                                memory, vmIdList.get(jIdx), NetworkConstants.currentCloudletId));
-                    }
-                }
-                for (int jIdx = 0; jIdx < NUM_VMS; jIdx++) {
-                    if (idx != jIdx) {
-                        cl.stages.add(new TaskStage(NetworkConstants.WAIT_RECV, NetworkConstants.COMMUNICATION_LENGTH, 0,
-                                stgId++, memory, vmIdList.get(jIdx), cl.getCloudletId() + jIdx));
-                    }
-                }
-
-            }
-            clist.add(cl);
-        }
+        LOGGER.info("NetworkSimulationDualDC.createCloudletList() is executed. ");
     }
 
     static void CreateNetwork(int numhost, NetworkDatacenter dc) {
@@ -387,8 +351,7 @@ public class NetworkSimulationDualDC extends AppCloudlet {
             edgeswitch[i] = new EdgeSwitch("Edge" + i, NetworkConstants.EDGE_LEVEL, dc);
             // edgeswitch[i].uplinkswitches.add(null);
             dc.Switchlist.put(edgeswitch[i].getId(), edgeswitch[i]);
-            // aggswitch[(int)
-            // (i/Constants.AggSwitchPort)].downlinkswitches.add(edgeswitch[i]);
+            // aggswitch[(int) (i/Constants.AggSwitchPort)].downlinkswitches.add(edgeswitch[i]);
         }
 
         for (Host hs : dc.getHostList()) {

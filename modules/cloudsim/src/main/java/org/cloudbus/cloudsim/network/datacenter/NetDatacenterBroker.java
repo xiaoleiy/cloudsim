@@ -14,6 +14,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.DatacenterCharacteristics;
 import org.cloudbus.cloudsim.Log;
@@ -36,7 +37,10 @@ import org.cloudbus.cloudsim.lists.VmList;
  */
 public class NetDatacenterBroker extends SimEntity {
 
-    // TODO: remove unnecessary variables
+    /**
+     * Updated by xiaoleiy: The logger to print logs to file
+     */
+    private static final Logger LOGGER = Logger.getLogger(NetDatacenterBroker.class);
 
     /**
      * The vm list.
@@ -107,10 +111,24 @@ public class NetDatacenterBroker extends SimEntity {
      */
     private Map<Integer, DatacenterCharacteristics> datacenterCharacteristicsList;
 
-    public static NetworkDatacenter linkDC;
+    /**
+     * Updated by xiaoleiy:
+     * The global variable linkDC must be declared as non-static,
+     * otherwise only 1 datacenter could be bound to the broker no matter how many brokers you have.
+     *
+     * In this way, for every broker, a separate data center could be bound for cloudlets being created and executed.
+     */
+    public NetworkDatacenter linkDC;
 
     public boolean createvmflag = true;
 
+    /**
+     * Updated by xiaoleiy:
+     * redundant global variable cachedcloudlet, should be deleted.
+     *
+     * NOTE: NEVER declare static global variables when you want to create multiple data center brokers.
+     * Because the static variables are class-level in Java, and only 1 instance of them exist in the JVM.
+     */
     public static int cachedcloudlet = 0;
 
     /**
@@ -142,7 +160,6 @@ public class NetDatacenterBroker extends SimEntity {
         setDatacenterRequestedIdsList(new ArrayList<Integer>());
         setVmsToDatacentersMap(new HashMap<Integer, Integer>());
         setDatacenterCharacteristicsList(new HashMap<Integer, DatacenterCharacteristics>());
-
     }
 
     /**
@@ -168,7 +185,7 @@ public class NetDatacenterBroker extends SimEntity {
         getCloudletList().addAll(list);
     }
 
-    public static void setLinkDC(NetworkDatacenter alinkDC) {
+    public void setLinkDC(NetworkDatacenter alinkDC) {
         linkDC = alinkDC;
     }
 
@@ -280,9 +297,8 @@ public class NetDatacenterBroker extends SimEntity {
                 // all the cloudlets sent finished. It means that some bount
                 // cloudlet is waiting its VM be created
                 clearDatacenters();
-                createVmsInDatacenterBase(0);
+                createVmsInDatacenterBase(linkDC.getId());
             }
-
         }
     }
 
@@ -326,8 +342,8 @@ public class NetDatacenterBroker extends SimEntity {
         for (int i = 0; i < NetworkConstants.MAX_NUM_APPS; i++) {
             this.getAppCloudletList().add(
                     new WorkflowApp(AppCloudlet.APP_Workflow, NetworkConstants.currentAppId, 0, 0, getId()));
+            LOGGER.info("[" + this.linkDC.getName() + "] created workflow app #" + NetworkConstants.currentAppId + " with datacenter #" + this.linkDC.getId() + " user #" + getId());
             NetworkConstants.currentAppId++;
-
         }
         int k = 0;
 
@@ -345,15 +361,18 @@ public class NetDatacenterBroker extends SimEntity {
             if (!vmids.isEmpty()) {
                 app.createCloudletList(vmids);
                 for (int i = 0; i < app.numbervm; i++) {
-                    app.clist.get(i).setUserId(getId());
+                    NetworkCloudlet cloudlet = app.clist.get(i);
+                    cloudlet.setUserId(getId());
                     appCloudletRecieved.put(app.appID, app.numbervm);
-                    getCloudletSubmittedList().add(app.clist.get(i));
+                    getCloudletSubmittedList().add(cloudlet);
                     cloudletsSubmitted++;
+
+                    LOGGER.info("[" + this.linkDC.getName() + "] created cloudlet #" + cloudlet.getCloudletId() + " with datacenter # " + this.linkDC.getId() + " user #" + cloudlet.getUserId());
 
                     // Sending cloudlet
                     sendNow(getVmsToDatacentersMap().get(this.getVmList().get(0).getId()),
                             CloudSimTags.CLOUDLET_SUBMIT,
-                            app.clist.get(i));
+                            cloudlet);
                 }
             }
         }
@@ -391,7 +410,7 @@ public class NetDatacenterBroker extends SimEntity {
                     bw,
                     size,
                     vmm,
-                    new NetworkCloudletSpaceSharedScheduler());
+                    new NetworkCloudletSpaceSharedScheduler(this));
             linkDC.processVmCreateNetwork(vm);
             // add the VM to the vmList
             getVmList().add(vm);

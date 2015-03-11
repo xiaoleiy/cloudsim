@@ -112,7 +112,7 @@ public class NetworkDatacenter extends Datacenter {
 		if (result) {
 			VmToSwitchid.put(vm.getId(), ((NetworkHost) vm.getHost()).sw.getId());
 			VmtoHostlist.put(vm.getId(), vm.getHost().getId());
-			LOGGER.info("VM #" + vm.getId() + " is created on host #" + vm.getHost().getId());
+			LOGGER.info("[" + this.getName() + "] VM #" + vm.getId() + " is created on host #" + vm.getHost().getId());
 			getVmList().add(vm);
 			vm.updateVmProcessing(CloudSim.clock(), getVmAllocationPolicy().getHost(vm).getVmScheduler()
 					.getAllocatedMipsForVm(vm));
@@ -135,12 +135,12 @@ public class NetworkDatacenter extends Datacenter {
 
 		try {
 			// gets the Cloudlet object
-			Cloudlet cl = (Cloudlet) ev.getData();
+			Cloudlet cloudlet = (Cloudlet) ev.getData();
 
 			// checks whether this Cloudlet has finished or not
-			if (cl.isFinished()) {
-				String name = CloudSim.getEntityName(cl.getUserId());
-				Log.printConcatLine(getName(), ": Warning - Cloudlet #", cl.getCloudletId(), " owned by ", name,
+			if (cloudlet.isFinished()) {
+				String name = CloudSim.getEntityName(cloudlet.getUserId());
+				Log.printConcatLine(getName(), ": Warning - Cloudlet #", cloudlet.getCloudletId(), " owned by ", name,
 						" is already completed/finished.");
 				Log.printLine("Therefore, it is not being executed again");
 				Log.printLine();
@@ -153,33 +153,32 @@ public class NetworkDatacenter extends Datacenter {
 				if (ack) {
 					int[] data = new int[3];
 					data[0] = getId();
-					data[1] = cl.getCloudletId();
+					data[1] = cloudlet.getCloudletId();
 					data[2] = CloudSimTags.FALSE;
 
 					// unique tag = operation tag
 					int tag = CloudSimTags.CLOUDLET_SUBMIT_ACK;
-					sendNow(cl.getUserId(), tag, data);
+					sendNow(cloudlet.getUserId(), tag, data);
 				}
 
-				sendNow(cl.getUserId(), CloudSimTags.CLOUDLET_RETURN, cl);
-
+				sendNow(cloudlet.getUserId(), CloudSimTags.CLOUDLET_RETURN, cloudlet);
 				return;
 			}
 
 			// process this Cloudlet to this CloudResource
-			cl.setResourceParameter(getId(), getCharacteristics().getCostPerSecond(), getCharacteristics()
+			cloudlet.setResourceParameter(getId(), getCharacteristics().getCostPerSecond(), getCharacteristics()
 					.getCostPerBw());
 
-			int userId = cl.getUserId();
-			int vmId = cl.getVmId();
+			int userId = cloudlet.getUserId();
+			int vmId = cloudlet.getVmId();
 
 			// time to transfer the files
-			double fileTransferTime = predictFileTransferTime(cl.getRequiredFiles());
+			double fileTransferTime = predictFileTransferTime(cloudlet.getRequiredFiles());
 
 			Host host = getVmAllocationPolicy().getHost(vmId, userId);
 			Vm vm = host.getVm(vmId, userId);
 			CloudletScheduler scheduler = vm.getCloudletScheduler();
-			double estimatedFinishTime = scheduler.cloudletSubmit(cl, fileTransferTime);
+			double estimatedFinishTime = scheduler.cloudletSubmit(cloudlet, fileTransferTime);
 
 			if (estimatedFinishTime > 0.0) { // if this cloudlet is in the exec
 				// time to process the cloudlet
@@ -193,18 +192,21 @@ public class NetworkDatacenter extends Datacenter {
 			if (ack) {
 				int[] data = new int[3];
 				data[0] = getId();
-				data[1] = cl.getCloudletId();
+				data[1] = cloudlet.getCloudletId();
 				data[2] = CloudSimTags.TRUE;
 
 				// unique tag = operation tag
 				int tag = CloudSimTags.CLOUDLET_SUBMIT_ACK;
-				sendNow(cl.getUserId(), tag, data);
+				sendNow(cloudlet.getUserId(), tag, data);
 			}
+
+			LOGGER.info("[" + this.getName() +"] The cloudlet " + cloudlet.getCloudletId()
+					+ " @ VM#" + cloudlet.getVmId() + " User#" + cloudlet.getUserId() + " Host#" + host.getId() + " has been submitted.");
 		} catch (ClassCastException c) {
-			Log.printLine(getName() + ".processCloudletSubmit(): " + "ClassCastException error.");
+			Log.printLine(getName() + ".processCloudletSubmit(): ClassCastException error.");
 			c.printStackTrace();
 		} catch (Exception e) {
-			Log.printLine(getName() + ".processCloudletSubmit(): " + "Exception error.");
+			Log.printLine(getName() + ".processCloudletSubmit(): Exception error.");
 			e.printStackTrace();
 		}
 
