@@ -24,6 +24,7 @@ import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
 import org.cloudbus.cloudsim.core.predicates.PredicateType;
+import org.cloudbus.cloudsim.examples.network.datacenter.Util;
 import org.cloudbus.cloudsim.lists.VmList;
 
 public class Switch extends SimEntity {
@@ -92,6 +93,7 @@ public class Switch extends SimEntity {
 		// Resource characteristics request
 			case CloudSimTags.Network_Event_UP:
 				// process the packet from down switch or host
+				Util.printPacketEvent(ev);
 				processpacket_up(ev);
 				break;
 			case CloudSimTags.Network_Event_DOWN:

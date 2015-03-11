@@ -49,4 +49,12 @@ public class NetworkPacket {
 	double stime;// time when sent
 
 	double rtime;// time when received
+
+	@Override
+	public String toString() {
+		return "sender: host #" + senderhostid + " vm #" + sendervmid +
+				"\t receiver: host #" + recieverhostid + " vm #" + recievervmid +
+				"\t data: sender #" + pkt.sender + " receiver #" + pkt.reciever +
+				"data " + pkt.data;
+	}
 }
