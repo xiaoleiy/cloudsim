@@ -113,12 +113,14 @@ public class NetDatacenterBroker extends SimEntity {
 
     /**
      * Updated by xiaoleiy:
-     * The global variable linkDC must be declared as non-static,
+     * 1. The global variable linkDC must be declared as non-static,
      * otherwise only 1 datacenter could be bound to the broker no matter how many brokers you have.
+     *
+     * 2. TODO
      *
      * In this way, for every broker, a separate data center could be bound for cloudlets being created and executed.
      */
-    public NetworkDatacenter linkDC;
+    private List<NetworkDatacenter> linkDCs = new ArrayList<NetworkDatacenter>();
 
     public boolean createvmflag = true;
 
@@ -185,10 +187,6 @@ public class NetDatacenterBroker extends SimEntity {
         getCloudletList().addAll(list);
     }
 
-    public void setLinkDC(NetworkDatacenter alinkDC) {
-        linkDC = alinkDC;
-    }
-
     /**
      * Processes events available for this Broker.
      *
@@ -219,7 +217,13 @@ public class NetDatacenterBroker extends SimEntity {
                 break;
             case CloudSimTags.NextCycle:
                 if (NetworkConstants.BASE) {
-                    createVmsInDatacenterBase(linkDC.getId());
+
+                    /**
+                     * Updated by xiaoleiy: updated to iterately create vms in all datacenters bound to this broker.
+                     */
+                    for (NetworkDatacenter dc : this.getLinkDCs()) {
+                        createVmsInDatacenterBase(dc);
+                    }
                 }
 
                 break;
@@ -241,9 +245,15 @@ public class NetDatacenterBroker extends SimEntity {
         DatacenterCharacteristics characteristics = (DatacenterCharacteristics) ev.getData();
         getDatacenterCharacteristicsList().put(characteristics.getId(), characteristics);
 
-        if (getDatacenterCharacteristicsList().size() == getDatacenterIdsList().size()) {
+        List<Integer> boundDCIds = getDatacenterIdsList();
+        if (getDatacenterCharacteristicsList().size() == boundDCIds.size()) {
             setDatacenterRequestedIdsList(new ArrayList<Integer>());
-            createVmsInDatacenterBase(getDatacenterIdsList().get(0));
+
+            for (NetworkDatacenter datacenter : this.getLinkDCs()) {
+                if (boundDCIds.contains(datacenter.getId())) {
+                    createVmsInDatacenterBase(datacenter);
+                }
+            }
         }
     }
 
@@ -254,7 +264,6 @@ public class NetDatacenterBroker extends SimEntity {
      * @pre ev != $null
      * @post $none
      */
-
     protected void processResourceCharacteristicsRequest(SimEvent ev) {
         setDatacenterIdsList(CloudSim.getCloudResourceList());
         setDatacenterCharacteristicsList(new HashMap<Integer, DatacenterCharacteristics>());
@@ -297,14 +306,20 @@ public class NetDatacenterBroker extends SimEntity {
                 // all the cloudlets sent finished. It means that some bount
                 // cloudlet is waiting its VM be created
                 clearDatacenters();
-                createVmsInDatacenterBase(linkDC.getId());
+
+                /**
+                 * Updated by xiaoleiy: updated to iterately create vms in all datacenters bound to this broker.
+                 */
+                for (NetworkDatacenter dc : this.getLinkDCs()) {
+                    createVmsInDatacenterBase(dc);
+                }
             }
         }
     }
 
     /**
      * Overrides this method when making a new and different type of Broker. This method is called
-     * by {@link #body()} for incoming unknown tags.
+     * by {@link #()} for incoming unknown tags.
      *
      * @param ev a SimEvent object
      * @pre ev != null
@@ -323,35 +338,41 @@ public class NetDatacenterBroker extends SimEntity {
     /**
      * Create the virtual machines in a datacenter and submit/schedule cloudlets to them.
      *
-     * @param datacenterId Id of the chosen PowerDatacenter
+     * @param datacenter Id of the chosen PowerDatacenter
      * @pre $none
      * @post $none
      */
-    protected void createVmsInDatacenterBase(int datacenterId) {
+    protected void createVmsInDatacenterBase(NetworkDatacenter datacenter) {
         // send as much vms as possible for this datacenter before trying the
         // next one
         int requestedVms = 0;
 
         // All host will have two VMs (assumption) VM is the minimum unit
         if (createvmflag) {
-            CreateVMs(datacenterId);
-            createvmflag = false;
+            CreateVMs(datacenter);
+
+            /**
+             * Updated by xiaoleiy:
+             * comment the following line to allow creating VMs for multiple data centers bound to this broker.
+             */
+//            createvmflag = false;
         }
 
         // generate Application execution Requests
         for (int i = 0; i < NetworkConstants.MAX_NUM_APPS; i++) {
-            this.getAppCloudletList().add(
-                    new WorkflowApp(AppCloudlet.APP_Workflow, NetworkConstants.currentAppId, 0, 0, getId()));
-            LOGGER.info("[" + this.linkDC.getName() + "] created workflow app #" + NetworkConstants.currentAppId + " with datacenter #" + this.linkDC.getId() + " user #" + getId());
+            this.getAppCloudletList().add(new WorkflowApp(AppCloudlet.APP_Workflow, NetworkConstants.currentAppId, 0, 0, getId()));
+
+            // Updated by xiaoleiy: added logs for better information printing out.
+            LOGGER.info("[" + datacenter.getName() + "] created workflow app #" + NetworkConstants.currentAppId +
+                    " with datacenter #" + datacenter.getId() + " user #" + getId());
             NetworkConstants.currentAppId++;
         }
         int k = 0;
 
         // schedule the application on VMs
         for (AppCloudlet app : this.getAppCloudletList()) {
-
             List<Integer> vmids = new ArrayList<Integer>();
-            int numVms = linkDC.getVmList().size();
+            int numVms = datacenter.getVmList().size();
             UniformDistr ufrnd = new UniformDistr(0, numVms, System.nanoTime());
             for (int i = 0; i < app.numbervm; i++) {
                 int vmid = (int) ufrnd.sample();
@@ -367,7 +388,8 @@ public class NetDatacenterBroker extends SimEntity {
                     getCloudletSubmittedList().add(cloudlet);
                     cloudletsSubmitted++;
 
-                    LOGGER.info("[" + this.linkDC.getName() + "] created cloudlet #" + cloudlet.getCloudletId() + " with datacenter # " + this.linkDC.getId() + " user #" + cloudlet.getUserId());
+                    LOGGER.info("[" + datacenter.getName() + "] created cloudlet #" + cloudlet.getCloudletId()
+                            + " with datacenter # " + datacenter.getId() + " user #" + cloudlet.getUserId());
 
                     // Sending cloudlet
                     sendNow(getVmsToDatacentersMap().get(this.getVmList().get(0).getId()),
@@ -388,9 +410,14 @@ public class NetDatacenterBroker extends SimEntity {
         setVmsAcks(0);
     }
 
-    private void CreateVMs(int datacenterId) {
+    /**
+     * Updated by xiaoleiy: updasted the parameter from datacentger id to the object datacenter;
+     *
+     * @param datacenter the datacenter
+     */
+    private void CreateVMs(NetworkDatacenter datacenter) {
         // two VMs per host
-        int numVM = linkDC.getHostList().size() * NetworkConstants.maxhostVM;
+        int numVM = datacenter.getHostList().size() * NetworkConstants.maxhostVM;
         for (int i = 0; i < numVM; i++) {
             int vmid = i;
             int mips = 1;
@@ -411,10 +438,10 @@ public class NetDatacenterBroker extends SimEntity {
                     size,
                     vmm,
                     new NetworkCloudletSpaceSharedScheduler(this));
-            linkDC.processVmCreateNetwork(vm);
+            datacenter.processVmCreateNetwork(vm);
             // add the VM to the vmList
             getVmList().add(vm);
-            getVmsToDatacentersMap().put(vmid, datacenterId);
+            getVmsToDatacentersMap().put(vmid, datacenter.getId());
             getVmsCreatedList().add(VmList.getById(getVmList(), vmid));
         }
     }
@@ -713,4 +740,11 @@ public class NetDatacenterBroker extends SimEntity {
         this.datacenterRequestedIdsList = datacenterRequestedIdsList;
     }
 
+    public List<NetworkDatacenter> getLinkDCs() {
+        return linkDCs;
+    }
+
+    public void setLinkDCs(List<NetworkDatacenter> linkDCs) {
+        this.linkDCs = linkDCs;
+    }
 }

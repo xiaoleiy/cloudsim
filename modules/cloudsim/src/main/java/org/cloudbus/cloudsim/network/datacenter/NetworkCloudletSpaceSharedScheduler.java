@@ -148,20 +148,15 @@ public class NetworkCloudletSpaceSharedScheduler extends CloudletScheduler {
 				cl.currStagenum = 0;
 				cl.timetostartStage = CloudSim.clock();
 
-				if (cl.stages.get(0).type == NetworkConstants.EXECUTION) {
-					this.dcBroker.linkDC.schedule(
-							this.dcBroker.linkDC.getId(),
-							cl.stages.get(0).time,
-							CloudSimTags.VM_DATACENTER_EVENT);
-				} else {
-					this.dcBroker.linkDC.schedule(
-							this.dcBroker.linkDC.getId(),
-							0.0001,
-							CloudSimTags.VM_DATACENTER_EVENT);
-					// /sendstage///
+				// Updated by xiaoleiy:
+				// updated to iterately create send events of VM_DATACENTER_EVENT to all the bound datacenters in broker
+				boolean isExecutionStage = cl.stages.get(0).type == NetworkConstants.EXECUTION;
+				double delay = isExecutionStage ? cl.stages.get(0).time : 0.0001;
+
+				for (NetworkDatacenter datacenter : this.dcBroker.getLinkDCs()) {
+					datacenter.schedule(datacenter.getId(), delay, CloudSimTags.VM_DATACENTER_EVENT);
 				}
 			}
-
 		}
 
 		if (getCloudletExecList().size() == 0 && getCloudletWaitingList().size() == 0) { // no
@@ -265,13 +260,19 @@ public class NetworkCloudletSpaceSharedScheduler extends CloudletScheduler {
 				}
 
 			}
-			this.dcBroker.linkDC.schedule(this.dcBroker.linkDC.getId(), 0.0001, CloudSimTags.VM_DATACENTER_EVENT);
+
+			for (NetworkDatacenter datacenter : this.dcBroker.getLinkDCs()) {
+				datacenter.schedule(datacenter.getId(), 0.0001, CloudSimTags.VM_DATACENTER_EVENT);
+			}
+
 			if (i == cl.stages.size()) {
 				cl.currStagenum = NetworkConstants.FINISH;
 			} else {
 				cl.currStagenum = i;
 				if (cl.stages.get(i).type == NetworkConstants.EXECUTION) {
-					this.dcBroker.linkDC.schedule(dcBroker.linkDC.getId(), cl.stages.get(i).time, CloudSimTags.VM_DATACENTER_EVENT);
+					for (NetworkDatacenter datacenter : this.dcBroker.getLinkDCs()) {
+						datacenter.schedule(datacenter.getId(), cl.stages.get(i).time, CloudSimTags.VM_DATACENTER_EVENT);
+					}
 				}
 
 			}

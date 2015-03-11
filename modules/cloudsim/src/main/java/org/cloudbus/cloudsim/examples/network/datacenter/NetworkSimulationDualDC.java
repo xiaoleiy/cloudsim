@@ -81,25 +81,18 @@ public class NetworkSimulationDualDC extends AppCloudlet {
             NetworkDatacenter nwDatacenter02 = createDatacenter("Datacenter-02");
 
             // Third step: Create Brokers for separte datacenters
-            NetDatacenterBroker broker01 = createBroker("Broker-01");
-            broker01.setLinkDC(nwDatacenter01);
-
-            NetDatacenterBroker broker02 = createBroker("Broker-02");
-            broker02.setLinkDC(nwDatacenter02);
+            NetDatacenterBroker dcBroker = createBroker("Broker-01");
+            List<NetworkDatacenter> linkDCs = dcBroker.getLinkDCs();
+            linkDCs.add(nwDatacenter01);
+            linkDCs.add(nwDatacenter02);
 
             // Sixth step: Starts the simulation
             CloudSim.startSimulation();
             CloudSim.stopSimulation();
 
             // Final step: Print results when simulation is over
-            List<Cloudlet> recvCloudletsForDC01 = broker01.getCloudletReceivedList();
-            List<Cloudlet> recvCloudletsForDC02 = broker02.getCloudletReceivedList();
-
+            List<Cloudlet> recvCloudletsForDC01 = dcBroker.getCloudletReceivedList();
             LOGGER.info(nwDatacenter01.getName() + " -- Number of cloudlets: " + recvCloudletsForDC01.size() +
-                    ", Cached " + NetDatacenterBroker.cachedcloudlet +
-                    ", Data transfered " + NetworkConstants.totaldatatransfer);
-
-            LOGGER.info(nwDatacenter02.getName() + " -- Number of cloudlets: " + recvCloudletsForDC02.size() +
                     ", Cached " + NetDatacenterBroker.cachedcloudlet +
                     ", Data transfered " + NetworkConstants.totaldatatransfer);
 

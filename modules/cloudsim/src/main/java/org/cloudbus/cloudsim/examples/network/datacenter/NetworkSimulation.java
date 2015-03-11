@@ -35,7 +35,7 @@ public class NetworkSimulation extends AppCloudlet {
     /**
      * The number of applications
      */
-    private static final int NUM_APPS = 500;
+    private static final int NUM_APPS = 10;
 
     /**
      * The number of users
@@ -81,13 +81,13 @@ public class NetworkSimulation extends AppCloudlet {
             // Second step: Create Datacenters
             // Datacenters are the resource providers in CloudSim. We need at
             // list one of them to run a CloudSim simulation
-            NetworkDatacenter nwDatacenter1 = createDatacenter("Datacenter-1");
-//            NetworkDatacenter nwDatacenter2 = createDatacenter("Datacenter-2");
+            NetworkDatacenter datacenter = createDatacenter("Datacenter-1");
 
             // Third step: Create Broker
             NetDatacenterBroker broker = createBroker();
-            broker.setLinkDC(nwDatacenter1);
-//            broker.setLinkDC(nwDatacenter2);
+
+            // Updated by xiaoleiy: add data center to the list in broker, not binding to the variable linkDC of broker;
+            broker.getLinkDCs().add(datacenter);
 
             //NetworkSimulation networkSimulation = new NetworkSimulation(0,24,1000.00,NUM_VMS);
             // Fifth step: Create one Cloudlet
