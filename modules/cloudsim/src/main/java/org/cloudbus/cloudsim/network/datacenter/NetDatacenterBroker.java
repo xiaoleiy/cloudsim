@@ -336,7 +336,7 @@ public class NetDatacenterBroker extends SimEntity {
 
             List<Integer> vmids = new ArrayList<Integer>();
             int numVms = linkDC.getVmList().size();
-            UniformDistr ufrnd = new UniformDistr(0, numVms, 10);
+            UniformDistr ufrnd = new UniformDistr(0, numVms, System.nanoTime());
             for (int i = 0; i < app.numbervm; i++) {
                 int vmid = (int) ufrnd.sample();
                 vmids.add(vmid);

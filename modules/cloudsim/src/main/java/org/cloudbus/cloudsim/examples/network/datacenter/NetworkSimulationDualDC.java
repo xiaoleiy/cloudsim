@@ -15,12 +15,12 @@ import java.util.*;
 /**
  * The entry class for simulating the cloud network.
  */
-public class NetworkSimulation extends AppCloudlet {
+public class NetworkSimulationDualDC extends AppCloudlet {
 
     /**
      * The class for printing out the logs
      */
-    private static final Logger LOGGER = Logger.getLogger(NetworkSimulation.class);
+    private static final Logger LOGGER = Logger.getLogger(NetworkSimulationDualDC.class);
 
     /**
      * The number of VMs
@@ -30,12 +30,12 @@ public class NetworkSimulation extends AppCloudlet {
     /**
      * The number of hosts
      */
-    private static final int NUM_HOSTS = 10;
+    private static final int NUM_HOSTS = 100;
 
     /**
      * The number of applications
      */
-    private static final int NUM_APPS = 500;
+    private static final int NUM_APPS = 1500;
 
     /**
      * The number of users
@@ -55,7 +55,7 @@ public class NetworkSimulation extends AppCloudlet {
     /**
      * The constructor with given parameters
      */
-    public NetworkSimulation(int type, int appID, double deadline, int userId) {
+    public NetworkSimulationDualDC(int type, int appID, double deadline, int userId) {
         super(type, appID, deadline, NUM_VMS, userId);
         this.exeTime = getExecTime() / this.numbervm;
     }
