@@ -30,14 +30,14 @@ public class NetworkSimulationDualDC extends AppCloudlet {
     /**
      * The number of hosts for each data center, 2 VMs will be created for each host.
      */
-    private static final int NUM_HOSTS = 150;
+    private static final int NUM_HOSTS = 50;
 
     /**
      * The number of workflow applications (WorkFlowApp) for each VMs
      * For each workflow application, there are 2 cloudlets being created (sender & receiver) separately hosted at 2 different VMs
      * For each cloudlet, there are 1500 task stages created, which indicate 1500 packets being silumated.
      */
-    private static final int NUM_APPS = 2000;
+    private static final int NUM_APPS = 3000;
 
     /**
      * The number of users
@@ -80,11 +80,11 @@ public class NetworkSimulationDualDC extends AppCloudlet {
             NetworkDatacenter nwDatacenter01 = createDatacenter("Datacenter-01");
             NetworkDatacenter nwDatacenter02 = createDatacenter("Datacenter-02");
 
-            // Third step: Create Brokers for separte datacenters
+            // Third step: Create Brokers for separte datacenters                                                           
             NetDatacenterBroker dcBroker01 = createBroker("Broker-01");
             dcBroker01.getLinkDCs().add(nwDatacenter01);
 
-            NetDatacenterBroker dcBroker02 = createBroker("Broker-01");
+            NetDatacenterBroker dcBroker02 = createBroker("Broker-02");
             dcBroker02.getLinkDCs().add(nwDatacenter02);
 
             // Sixth step: Starts the simulation
