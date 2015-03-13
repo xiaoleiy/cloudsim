@@ -35,7 +35,7 @@ public class NetworkSimulation extends AppCloudlet {
     /**
      * The number of applications
      */
-    private static final int NUM_APPS = 2000;
+    private static final int NUM_APPS = 4000;
 
     /**
      * The number of users
