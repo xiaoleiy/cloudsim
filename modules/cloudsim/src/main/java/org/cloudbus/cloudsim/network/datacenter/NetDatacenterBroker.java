@@ -363,7 +363,7 @@ public class NetDatacenterBroker extends SimEntity {
             this.getAppCloudletList().add(new WorkflowApp(AppCloudlet.APP_Workflow, NetworkConstants.currentAppId, 0, 0, getId()));
 
             // Updated by xiaoleiy: added logs for better information printing out.
-            LOGGER.info("[" + datacenter.getName() + "] created workflow app #" + NetworkConstants.currentAppId +
+            LOGGER.debug("[" + datacenter.getName() + "] created workflow app #" + NetworkConstants.currentAppId +
                     " with datacenter #" + datacenter.getId() + " user #" + getId());
             NetworkConstants.currentAppId++;
         }
@@ -373,7 +373,7 @@ public class NetDatacenterBroker extends SimEntity {
         for (AppCloudlet app : this.getAppCloudletList()) {
             List<Integer> vmids = new ArrayList<Integer>();
             int numVms = datacenter.getVmList().size();
-            UniformDistr ufrnd = new UniformDistr(0, numVms, System.nanoTime());
+            UniformDistr ufrnd = new UniformDistr(0, numVms, 5);
             for (int i = 0; i < app.numbervm; i++) {
                 int vmid = (int) ufrnd.sample();
                 vmids.add(vmid);
@@ -388,7 +388,7 @@ public class NetDatacenterBroker extends SimEntity {
                     getCloudletSubmittedList().add(cloudlet);
                     cloudletsSubmitted++;
 
-                    LOGGER.info("[" + datacenter.getName() + "] created cloudlet #" + cloudlet.getCloudletId()
+                    LOGGER.debug("[" + datacenter.getName() + "] created cloudlet #" + cloudlet.getCloudletId()
                             + " with datacenter # " + datacenter.getId() + " user #" + cloudlet.getUserId());
 
                     // Sending cloudlet

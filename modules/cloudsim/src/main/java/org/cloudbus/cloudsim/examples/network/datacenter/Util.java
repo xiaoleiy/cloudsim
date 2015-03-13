@@ -14,7 +14,7 @@ public class Util {
     public static void printPacketEvent(SimEvent event) {
 
         NetworkPacket packet = (NetworkPacket)event.getData();
-        LOGGER.info("event from " + event.getSource() + " to " + event.getDestination() + " with data: " +
+        LOGGER.debug("event from " + event.getSource() + " to " + event.getDestination() + " with data: " +
                 packet.toString());
     }
 }

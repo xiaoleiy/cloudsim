@@ -30,14 +30,14 @@ public class NetworkSimulationDualDC extends AppCloudlet {
     /**
      * The number of hosts for each data center, 2 VMs will be created for each host.
      */
-    private static final int NUM_HOSTS = 10;
+    private static final int NUM_HOSTS = 150;
 
     /**
      * The number of workflow applications (WorkFlowApp) for each VMs
      * For each workflow application, there are 2 cloudlets being created (sender & receiver) separately hosted at 2 different VMs
      * For each cloudlet, there are 1500 task stages created, which indicate 1500 packets being silumated.
      */
-    private static final int NUM_APPS = 10;
+    private static final int NUM_APPS = 2000;
 
     /**
      * The number of users
@@ -81,18 +81,21 @@ public class NetworkSimulationDualDC extends AppCloudlet {
             NetworkDatacenter nwDatacenter02 = createDatacenter("Datacenter-02");
 
             // Third step: Create Brokers for separte datacenters
-            NetDatacenterBroker dcBroker = createBroker("Broker-01");
-            List<NetworkDatacenter> linkDCs = dcBroker.getLinkDCs();
-            linkDCs.add(nwDatacenter01);
-            linkDCs.add(nwDatacenter02);
+            NetDatacenterBroker dcBroker01 = createBroker("Broker-01");
+            dcBroker01.getLinkDCs().add(nwDatacenter01);
+
+            NetDatacenterBroker dcBroker02 = createBroker("Broker-01");
+            dcBroker02.getLinkDCs().add(nwDatacenter02);
 
             // Sixth step: Starts the simulation
             CloudSim.startSimulation();
             CloudSim.stopSimulation();
 
             // Final step: Print results when simulation is over
-            List<Cloudlet> recvCloudletsForDC01 = dcBroker.getCloudletReceivedList();
-            LOGGER.info(nwDatacenter01.getName() + " -- Number of cloudlets: " + recvCloudletsForDC01.size() +
+            List<Cloudlet> recvCloudletsForDC01 = dcBroker01.getCloudletReceivedList();
+            List<Cloudlet> recvCloudletsForDC02 = dcBroker02.getCloudletReceivedList();
+            LOGGER.info(nwDatacenter01.getName() + "Number of cloudlets in broker01: " + recvCloudletsForDC01.size() +
+                    ", cloudlets in broker02: " + recvCloudletsForDC02.size() +
                     ", Cached " + NetDatacenterBroker.cachedcloudlet +
                     ", Data transfered " + NetworkConstants.totaldatatransfer);
 

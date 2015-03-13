@@ -93,7 +93,7 @@ public class Switch extends SimEntity {
 		// Resource characteristics request
 			case CloudSimTags.Network_Event_UP:
 				// process the packet from down switch or host
-				Util.printPacketEvent(ev);
+//				Util.printPacketEvent(ev);
 				processpacket_up(ev);
 				break;
 			case CloudSimTags.Network_Event_DOWN:
