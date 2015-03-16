@@ -1,5 +1,6 @@
 package org.cloudbus.cloudsim.examples.network.datacenter;
 
+import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.cloudbus.cloudsim.*;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -30,12 +31,12 @@ public class NetworkSimulation extends AppCloudlet {
     /**
      * The number of hosts
      */
-    private static final int NUM_HOSTS = 200;
+    private static final int NUM_HOSTS = 10;
 
     /**
      * The number of applications
      */
-    private static final int NUM_APPS = 4000;
+    private static final int NUM_APPS = 100;
 
     /**
      * The number of users
@@ -66,56 +67,73 @@ public class NetworkSimulation extends AppCloudlet {
      * @param args the args
      */
     public static void main(String[] args) {
-        NetworkConstants.MAX_NUM_APPS = NUM_APPS;
-        NetworkConstants.EdgeSwitchPort = NUM_HOSTS;
+
+        /**
+         * Big data generation task: read user input as numbers of datacenters, hosts, applications
+         */
+        int countDCs = 1;
+        try {
+            countDCs = Integer.parseInt(args[0]);                           // The number of data centers
+            NetworkConstants.EdgeSwitchPort = Integer.parseInt(args[1]);    // The number of hosts
+            NetworkConstants.MAX_NUM_APPS = Integer.parseInt(args[2]);      // The number of applications
+        }
+        catch (NumberFormatException e) {
+            System.out.println("You provided invalid parameters, please provide as following: ");
+            System.out.println("java -jar cloudsim.jar <num_datacenters> <num_hosts> <num_applications> ");
+            return;
+        }
+        catch (ArrayIndexOutOfBoundsException e) {
+            System.out.println("You provided invalid parameters, please provide as following: ");
+            System.out.println("java -jar cloudsim.jar <num_datacenters> <num_hosts> <num_applications> ");
+            return;
+        }
 
         LOGGER.info("Starting NetworkSimulation...");
-        LOGGER.info("Number of hosts: " + NetworkConstants.EdgeSwitchPort + ", vms: " + NUM_VMS + ", apps:" + NetworkConstants.MAX_NUM_APPS
-                    + ", users: " + NUM_USERS);
+        LOGGER.info("Number of datacenters: " + countDCs + ", hosts: " + NetworkConstants.EdgeSwitchPort +
+                ", vms: " + NUM_VMS +
+                ", apps:" + NetworkConstants.MAX_NUM_APPS +
+                ", users: " + NUM_USERS);
 
         long startTimestamp = System.currentTimeMillis();
         try {
             // Initialize the CloudSim library
             CloudSim.init(NUM_USERS, Calendar.getInstance(), FLAG_TRACE);
 
-            // Second step: Create Datacenters
-            // Datacenters are the resource providers in CloudSim. We need at
-            // list one of them to run a CloudSim simulation
-            NetworkDatacenter datacenter = createDatacenter("Datacenter-1");
+            // Create multiple brokers, each of which attached a data center.
+            List<NetDatacenterBroker> brokers = new ArrayList<NetDatacenterBroker>();
+            for (int idxDCs = 0; idxDCs < countDCs; idxDCs++) {
 
-            // Third step: Create Broker
-            NetDatacenterBroker broker = createBroker();
+                // Second step: Create Datacenters
+                // Datacenters are the resource providers in CloudSim.
+                NetworkDatacenter datacenter = createDatacenter("Datacenter-" + idxDCs);
 
-            // Updated by xiaoleiy: add data center to the list in broker, not binding to the variable linkDC of broker;
-            broker.getLinkDCs().add(datacenter);
-
-            //NetworkSimulation networkSimulation = new NetworkSimulation(0,24,1000.00,NUM_VMS);
-            // Fifth step: Create one Cloudlet
-            //networkSimulation.createCloudletList(VM_IDS);
-            //vmlist = new ArrayList<NetworkVm>();
-            // submit vm list to the broker
-            //broker.submitVmList(vmlist);
-
+                // Third step: Create Brokers for separte datacenters
+                NetDatacenterBroker broker = createBroker("Broker-" + idxDCs);
+                broker.getLinkDCs().add(datacenter);
+                brokers.add(broker);
+            }
 
             // Sixth step: Starts the simulation
             CloudSim.startSimulation();
             CloudSim.stopSimulation();
 
-            // Final step: Print results when simulation is over
-            List<Cloudlet> newList = broker.getCloudletReceivedList();
-            //printCloudletList(newList);
-            //printCloudletNWStats(newList);
+            // finished simulation, will print out the stat data for reference
+            StringBuffer statLogs = new StringBuffer("Data transfered: " + NetworkConstants.totaldatatransfer +
+                    ". Number of cloudlets: \n");
+            for (int idxDCs = 0; idxDCs < countDCs; idxDCs++) {
+                NetDatacenterBroker broker = brokers.get(idxDCs);
+                List<Cloudlet> receivedList = broker.getCloudletReceivedList();
+                statLogs.append(broker.getName() + ": " + receivedList.size() + "\n");
+            }
 
-            LOGGER.info("Number of cloudlets: " + newList.size() +
-                    ", Cached " + NetDatacenterBroker.cachedcloudlet +
-                    ", Data transfered " + NetworkConstants.totaldatatransfer);
-
+            LOGGER.info(statLogs);
         } catch (Exception e) {
             LOGGER.error("Failed to simulate the network with following exception: " + e);
         }
 
         long endTimestamp = System.currentTimeMillis();
         LOGGER.info("Finished the network simulation within " + (endTimestamp - startTimestamp) / 1000 + "s.");
+        LogManager.shutdown();
     }
 
     /**
@@ -146,61 +164,18 @@ public class NetworkSimulation extends AppCloudlet {
         // of machines
         int ram = 2048; // host memory (MB)
         long storage = 1000000; // host storage
-        int bw = 10000;
+        int bw = 1000000;
         for (int i = 0; i < NetworkConstants.EdgeSwitchPort * NetworkConstants.AggSwitchPort
                 * NetworkConstants.RootSwitchPort; i++) {
             // 2. A Machine contains one or more PEs or CPUs/Cores.
             // In this example, it will have only one core.
             // 3. Create PEs and add these into an object of PowerPeList.
+            // Updated by xiaoleiy: increse size of PEs from 8 to 32;
             List<Pe> peList = new ArrayList<Pe>();
-            peList.add(new Pe(0, new PeProvisionerSimple(mips))); // need to
-            // store
-            // PowerPe
-            // id and
-            // MIPS
-            // Rating
-            peList.add(new Pe(1, new PeProvisionerSimple(mips))); // need to
-            // store
-            // PowerPe
-            // id and
-            // MIPS
-            // Rating
-            peList.add(new Pe(2, new PeProvisionerSimple(mips))); // need to
-            // store
-            // PowerPe
-            // id and
-            // MIPS
-            // Rating
-            peList.add(new Pe(3, new PeProvisionerSimple(mips))); // need to
-            // store
-            // PowerPe
-            // id and
-            // MIPS
-            // Rating
-            peList.add(new Pe(4, new PeProvisionerSimple(mips))); // need to
-            // store
-            // PowerPe
-            // id and
-            // MIPS
-            // Rating
-            peList.add(new Pe(5, new PeProvisionerSimple(mips))); // need to
-            // store
-            // PowerPe
-            // id and
-            // MIPS
-            // Rating
-            peList.add(new Pe(6, new PeProvisionerSimple(mips))); // need to
-            // store
-            // PowerPe
-            // id and
-            // MIPS
-            // Rating
-            peList.add(new Pe(7, new PeProvisionerSimple(mips))); // need to
-            // store
-            // PowerPe
-            // id and
-            // MIPS
-            // Rating
+            for (int peIdx = 0; peIdx < 32; peIdx++)
+            {
+                peList.add(new Pe(peIdx, new PeProvisionerSimple(mips))); // need to
+            }
 
             // 4. Create PowerHost with its id and list of PEs and add them to
             // the list of machines
@@ -252,7 +227,7 @@ public class NetworkSimulation extends AppCloudlet {
                     new NetworkVmAllocationPolicy(hostList),
                     storageList,
                     0);
-            LOGGER.info("Created data center: " + name + ", with " + hostList.size() + " hosts, 8 PEs");
+            LOGGER.info("Created data center: " + name + ", with " + hostList.size() + " hosts, 32 PEs");
         } catch (Exception e) {
             LOGGER.error("Failed to create data center due to exception: ", e);
         }
@@ -269,11 +244,12 @@ public class NetworkSimulation extends AppCloudlet {
      * Creates the broker.
      *
      * @return the datacenter broker
+     * @param brokerName
      */
-    private static NetDatacenterBroker createBroker() {
+    private static NetDatacenterBroker createBroker(String brokerName) {
         NetDatacenterBroker broker = null;
         try {
-            broker = new NetDatacenterBroker("Broker");
+            broker = new NetDatacenterBroker(brokerName);
         } catch (Exception e) {
             e.printStackTrace();
             return null;

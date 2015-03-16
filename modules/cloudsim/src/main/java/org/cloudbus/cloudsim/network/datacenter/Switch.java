@@ -17,6 +17,7 @@ import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.log4j.Logger;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Vm;
 import org.cloudbus.cloudsim.core.CloudSim;
@@ -28,6 +29,8 @@ import org.cloudbus.cloudsim.examples.network.datacenter.Util;
 import org.cloudbus.cloudsim.lists.VmList;
 
 public class Switch extends SimEntity {
+
+	private static final Logger LOGGER = Logger.getLogger(Switch.class);
 
 	// switch level
 	public int id;
@@ -82,7 +85,7 @@ public class Switch extends SimEntity {
 
 	@Override
 	public void startEntity() {
-		Log.printConcatLine(getName(), " is starting...");
+		LOGGER.info(getName() + " is starting...");
 		schedule(getId(), 0, CloudSimTags.RESOURCE_CHARACTERISTICS_REQUEST);
 	}
 
@@ -383,7 +386,7 @@ public class Switch extends SimEntity {
 
 	@Override
 	public void shutdownEntity() {
-		Log.printConcatLine(getName(), " is shutting down...");
+		LOGGER.info(getName() + " is shutting down...");
 	}
 
 }

@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
 import org.cloudbus.cloudsim.Log;
 
 /**
@@ -29,6 +30,11 @@ import org.cloudbus.cloudsim.Log;
  * @since CloudSim Toolkit 1.0
  */
 public class CloudInformationService extends SimEntity {
+
+	/**
+	 * Updated by xiaoleiy
+	 */
+	private static final Logger LOGGER = Logger.getLogger(CloudInformationService.class);
 
 	/** For all types of hostList. */
 	private final List<Integer> resList;
@@ -294,7 +300,7 @@ public class CloudInformationService extends SimEntity {
 	 * @post $none
 	 */
 	private void notifyAllEntity() {
-		Log.printConcatLine(super.getName(), ": Notify all CloudSim entities for shutting down.");
+		LOGGER.info(super.getName() + ": Notify all CloudSim entities for shutting down.");
 
 		signalShutdown(resList);
 		signalShutdown(gisList);

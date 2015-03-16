@@ -31,6 +31,9 @@ import org.cloudbus.cloudsim.core.predicates.PredicateNone;
  */
 public class CloudSim {
 
+	/**
+	 * Updated by xiaoleiy
+	 */
     private static final Logger LOGGER = Logger.getLogger(CloudSim.class);
 
 	/** The Constant CLOUDSIM_VERSION_STRING. */
@@ -180,7 +183,7 @@ public class CloudSim {
 	 * @post $none
 	 */
 	public static double startSimulation() throws NullPointerException {
-		Log.printConcatLine("Starting CloudSim version ", CLOUDSIM_VERSION_STRING);
+		LOGGER.info("Starting CloudSim version " + CLOUDSIM_VERSION_STRING);
 		try {
 			double clock = run();
 
@@ -547,7 +550,7 @@ public class CloudSim {
 	 * Internal method used to stop the simulation. This method should <b>not</b> be used directly.
 	 */
 	public static void runStop() {
-		printMessage("Simulation completed.");
+		LOGGER.info("Simulation completed.");
 	}
 
 	/**

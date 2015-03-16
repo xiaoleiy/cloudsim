@@ -268,8 +268,8 @@ public class NetDatacenterBroker extends SimEntity {
         setDatacenterIdsList(CloudSim.getCloudResourceList());
         setDatacenterCharacteristicsList(new HashMap<Integer, DatacenterCharacteristics>());
 
-        Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": Cloud Resource List received with ",
-                getDatacenterIdsList().size(), " resource(s)");
+        LOGGER.info(CloudSim.clock() + ": " + getName() + ": Cloud Resource List received with " +
+                getDatacenterIdsList().size() + " resource(s)");
 
         for (Integer datacenterId : getDatacenterIdsList()) {
             sendNow(datacenterId, CloudSimTags.RESOURCE_CHARACTERISTICS, getId());
@@ -479,7 +479,7 @@ public class NetDatacenterBroker extends SimEntity {
      */
     @Override
     public void shutdownEntity() {
-        Log.printConcatLine(getName(), " is shutting down...");
+        LOGGER.info(getName() + " is shutting down...");
     }
 
     /*
@@ -488,7 +488,7 @@ public class NetDatacenterBroker extends SimEntity {
      */
     @Override
     public void startEntity() {
-        Log.printConcatLine(getName(), " is starting...");
+        LOGGER.info(getName() + " is starting...");
         schedule(getId(), 0, CloudSimTags.RESOURCE_CHARACTERISTICS_REQUEST);
     }
 

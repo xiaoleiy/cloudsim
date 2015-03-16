@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEntity;
@@ -30,6 +31,11 @@ import org.cloudbus.cloudsim.core.SimEvent;
  * @since CloudSim Toolkit 1.0
  */
 public class Datacenter extends SimEntity {
+
+	/**
+	 * Updated by xiaoleiy
+	 */
+	private static final Logger LOGGER = Logger.getLogger(Datacenter.class);
 
 	/** The characteristics. */
 	private DatacenterCharacteristics characteristics;
@@ -1015,7 +1021,7 @@ public class Datacenter extends SimEntity {
 	 */
 	@Override
 	public void shutdownEntity() {
-		Log.printConcatLine(getName(), " is shutting down...");
+		LOGGER.info(getName() + " is shutting down...");
 	}
 
 	/*
@@ -1024,7 +1030,7 @@ public class Datacenter extends SimEntity {
 	 */
 	@Override
 	public void startEntity() {
-		Log.printConcatLine(getName(), " is starting...");
+		LOGGER.info(getName() + " is starting...");
 		// this resource should register to regional GIS.
 		// However, if not specified, then register to system GIS (the
 		// default CloudInformationService) entity.
