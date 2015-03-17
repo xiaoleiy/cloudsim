@@ -122,13 +122,12 @@ public class NetworkSimulation extends AppCloudlet {
                     ". Number of cloudlets: \n");
             for (int idxDCs = 0; idxDCs < countDCs; idxDCs++) {
                 NetDatacenterBroker broker = brokers.get(idxDCs);
-                List<Cloudlet> receivedList = broker.getCloudletReceivedList();
-                statLogs.append(broker.getName() + ": " + receivedList.size() + "\n");
+                statLogs.append(broker.getName() + ": " + broker.getCountCloudletReceived() + "\n");
             }
 
             LOGGER.info(statLogs);
         } catch (Exception e) {
-            LOGGER.error("Failed to simulate the network with following exception: " + e);
+            LOGGER.error("Failed to simulate the network with following exception: " + e, e);
         }
 
         long endTimestamp = System.currentTimeMillis();
@@ -357,14 +356,10 @@ public class NetworkSimulation extends AppCloudlet {
     static void CreateNetwork(int numhost, NetworkDatacenter dc) {
 
         // Edge Switch
-        EdgeSwitch edgeswitch[] = new EdgeSwitch[1];
-
-        for (int i = 0; i < 1; i++) {
+        EdgeSwitch edgeswitch[] = new EdgeSwitch[50];
+        for (int i = 0; i < 50; i++) {
             edgeswitch[i] = new EdgeSwitch("Edge" + i, NetworkConstants.EDGE_LEVEL, dc);
-            // edgeswitch[i].uplinkswitches.add(null);
             dc.Switchlist.put(edgeswitch[i].getId(), edgeswitch[i]);
-            // aggswitch[(int)
-            // (i/Constants.AggSwitchPort)].downlinkswitches.add(edgeswitch[i]);
         }
 
         for (Host hs : dc.getHostList()) {

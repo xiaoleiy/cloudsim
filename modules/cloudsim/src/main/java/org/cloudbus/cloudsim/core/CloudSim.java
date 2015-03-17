@@ -638,13 +638,16 @@ public class CloudSim {
 	 */
 	public static int waiting(int d, Predicate p) {
 		int count = 0;
-		SimEvent event;
-		Iterator<SimEvent> iterator = deferred.iterator();
-		while (iterator.hasNext()) {
-			event = iterator.next();
-			if ((event.getDestination() == d) && (p.match(event))) {
-				count++;
+
+		// Big data generation task:
+		// replace the iterator with list iteration for better performance -- no iterator entities created
+		List<SimEvent> eventList = deferred.getList();
+		for (SimEvent event : eventList) {
+			if (event.getDestination() != d || !p.match(event)) {
+				continue;
 			}
+
+			count++;
 		}
 		return count;
 	}
@@ -661,10 +664,12 @@ public class CloudSim {
 		Iterator<SimEvent> iterator = deferred.iterator();
 		while (iterator.hasNext()) {
 			ev = iterator.next();
-			if (ev.getDestination() == src && p.match(ev)) {
-				iterator.remove();
-				break;
+			if (ev.getDestination() != src || !p.match(ev)) {
+				continue;
 			}
+
+			iterator.remove();
+			break;
 		}
 		return ev;
 	}
@@ -677,15 +682,19 @@ public class CloudSim {
 	 * @return the sim event
 	 */
 	public static SimEvent findFirstDeferred(int src, Predicate p) {
-		SimEvent ev = null;
-		Iterator<SimEvent> iterator = deferred.iterator();
-		while (iterator.hasNext()) {
-			ev = iterator.next();
-			if (ev.getDestination() == src && p.match(ev)) {
-				break;
+
+		// Big data generation task:
+		// replace the iterator with list iteration for better performance -- no iterator entities created
+		List<SimEvent> eventList = deferred.getList();
+		for (SimEvent event : eventList) {
+			if (event.getDestination() != src || !p.match(event)) {
+				continue;
 			}
+
+			return event;
 		}
-		return ev;
+
+		return null;
 	}
 
 	/**
@@ -700,10 +709,12 @@ public class CloudSim {
 		Iterator<SimEvent> iter = future.iterator();
 		while (iter.hasNext()) {
 			ev = iter.next();
-			if (ev.getSource() == src && p.match(ev)) {
-				iter.remove();
-				break;
+			if (ev.getSource() != src || !p.match(ev)) {
+				continue;
 			}
+
+			iter.remove();
+			break;
 		}
 
 		return ev;
@@ -723,9 +734,11 @@ public class CloudSim {
 		Iterator<SimEvent> iter = future.iterator();
 		while (iter.hasNext()) {
 			ev = iter.next();
-			if (ev.getSource() == src && p.match(ev)) {
-				iter.remove();
+			if (ev.getSource() != src || !p.match(ev)) {
+				continue;
 			}
+
+			iter.remove();
 		}
 		return previousSize < future.size();
 	}

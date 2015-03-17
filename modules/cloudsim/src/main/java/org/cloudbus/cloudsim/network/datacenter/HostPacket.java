@@ -8,6 +8,8 @@
 
 package org.cloudbus.cloudsim.network.datacenter;
 
+import java.text.DecimalFormat;
+
 /**
  * HostPacket represents the packet that travels through the virtual network with a Host. It
  * contains information about cloudlets which are communicating
@@ -22,6 +24,11 @@ package org.cloudbus.cloudsim.network.datacenter;
  * @since CloudSim Toolkit 1.0
  */
 public class HostPacket {
+
+	/**
+	 *  Big data generation task: Instead of locally created formatter, use the global constant variable for less objects and CPU time.
+	 */
+	private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("###.###");
 
 	public HostPacket(
 			int sender,
@@ -54,4 +61,24 @@ public class HostPacket {
 	double sendtime;
 
 	double recievetime;
+
+	/**
+	 * Big data generation task: Replace string concat with StringBuffer to apply cache for better performance.
+	 *
+	 * @return the logs for packet
+	 */
+	public String toString() {
+		double latency = recievetime - sendtime;
+		double throughput = data;
+		if (latency != 0) throughput = (data/latency) * 1024;
+
+		StringBuilder strBuffer = new StringBuilder(250);
+		strBuffer.append("NetworkPacketStatistics -- ")
+				.append(" Sender   [").append(virtualsendid).append(",").append(sender).append("]\t\t")
+				.append(" Receiver [").append(virtualrecvid).append(",").append(reciever).append("]\t\t")
+				.append(" latency:").append(DECIMAL_FORMAT.format(latency)).append("\t")
+				.append(" throughput:").append(DECIMAL_FORMAT.format(throughput)).append("\t");
+
+		return strBuffer.toString();
+	}
 }

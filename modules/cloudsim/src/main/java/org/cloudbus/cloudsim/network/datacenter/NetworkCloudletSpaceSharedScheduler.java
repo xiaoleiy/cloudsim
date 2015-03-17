@@ -8,6 +8,7 @@
 
 package org.cloudbus.cloudsim.network.datacenter;
 
+import org.apache.log4j.Logger;
 import org.cloudbus.cloudsim.Cloudlet;
 import org.cloudbus.cloudsim.CloudletScheduler;
 import org.cloudbus.cloudsim.ResCloudlet;
@@ -28,6 +29,11 @@ import java.util.*;
  * @since CloudSim Toolkit 3.0
  */
 public class NetworkCloudletSpaceSharedScheduler extends CloudletScheduler {
+
+	/**
+	 * Big data generation task: logger
+	 */
+	private static final Logger LOGGER = Logger.getLogger(NetworkCloudletSpaceSharedScheduler.class);
 
 	/**
 	 * The data center broker
@@ -121,29 +127,32 @@ public class NetworkCloudletSpaceSharedScheduler extends CloudletScheduler {
 				}
 				if (st.type == NetworkConstants.WAIT_RECV) {
 					List<HostPacket> pktlist = pktrecv.get(st.peer);
-					List<HostPacket> pkttoremove = new ArrayList<HostPacket>();
-					if (pktlist != null) {
-						Iterator<HostPacket> it = pktlist.iterator();
-						HostPacket pkt = null;
-						if (it.hasNext()) {
-							pkt = it.next();
+
+					/**
+					 * Big data generation task:
+					 *
+					 * 1. remove the list of pkttoremove, instead we just remove the pkt itself from the pktlist.
+					 * 2. tune the logs print, with
+					 * 			1) constant variable of DecimalFormatter;
+					 * 			2) not creating the instances of PacketStats, but create toString() method in HostPacket itself,
+					 * 			   in order to reduce the amount of objects in JVM.
+					 * 3. remove the usage of iterator, which cause more temp objects. but just get the first element in pktlist.
+					 */
+					if (pktlist != null && !pktlist.isEmpty()) {
+						HostPacket pkt = pktlist.get(0);
+						if (pkt != null) {
 							// Asumption packet will not arrive in the same cycle
 							if (pkt.reciever == cl.getVmId()) {
 								pkt.recievetime = CloudSim.clock();
 								st.time = CloudSim.clock() - pkt.sendtime;
                                 st.currPkt = pkt;
 								changetonextstage(cl, st);
-                                cl.logPacket(new PacketStats(pkt));
-                                //printPktStats(cl,pkt);
-								pkttoremove.add(pkt);
+								LOGGER.info(pkt);
+								pktlist.remove(pkt);
 							}
 						}
-						pktlist.removeAll(pkttoremove);
-						// if(pkt!=null)
-						// else wait for recieving the packet
 					}
 				}
-
 			} else {
 				cl.currStagenum = 0;
 				cl.timetostartStage = CloudSim.clock();
@@ -239,26 +248,24 @@ public class NetworkCloudletSpaceSharedScheduler extends CloudletScheduler {
 			cl.currStagenum = currstage + 1;
 			int i = 0;
 			for (i = cl.currStagenum; i < cl.stages.size(); i++) {
-				if (cl.stages.get(i).type == NetworkConstants.WAIT_SEND) {
-					HostPacket pkt = new HostPacket(
-							cl.getVmId(),
-							cl.stages.get(i).peer,
-							cl.stages.get(i).data,
-							CloudSim.clock(),
-							-1,
-							cl.getCloudletId(),
-							cl.stages.get(i).vpeer);
-					List<HostPacket> pktlist = pkttosend.get(cl.getVmId());
-					if (pktlist == null) {
-						pktlist = new ArrayList<HostPacket>();
-					}
-					pktlist.add(pkt);
-					pkttosend.put(cl.getVmId(), pktlist);
-
-				} else {
+				if (cl.stages.get(i).type != NetworkConstants.WAIT_SEND) {
 					break;
 				}
 
+				HostPacket pkt = new HostPacket(
+						cl.getVmId(),
+						cl.stages.get(i).peer,
+						cl.stages.get(i).data,
+						CloudSim.clock(),
+						-1,
+						cl.getCloudletId(),
+						cl.stages.get(i).vpeer);
+				List<HostPacket> pktlist = pkttosend.get(cl.getVmId());
+				if (pktlist == null) {
+					pktlist = new LinkedList<HostPacket>();
+				}
+				pktlist.add(pkt);
+				pkttosend.put(cl.getVmId(), pktlist);
 			}
 
 			for (NetworkDatacenter datacenter : this.dcBroker.getLinkDCs()) {
@@ -555,22 +562,29 @@ public class NetworkCloudletSpaceSharedScheduler extends CloudletScheduler {
 	 */
 	@Override
 	public int getCloudletStatus(int cloudletId) {
+
+		/**
+		 * Big data generation task: invert if condition
+		 */
 		for (ResCloudlet rcl : getCloudletExecList()) {
-			if (rcl.getCloudletId() == cloudletId) {
-				return rcl.getCloudletStatus();
+			if (rcl.getCloudletId() != cloudletId) {
+				continue;
 			}
+			return rcl.getCloudletStatus();
 		}
 
 		for (ResCloudlet rcl : getCloudletPausedList()) {
-			if (rcl.getCloudletId() == cloudletId) {
-				return rcl.getCloudletStatus();
+			if (rcl.getCloudletId() != cloudletId) {
+				continue;
 			}
+			return rcl.getCloudletStatus();
 		}
 
 		for (ResCloudlet rcl : getCloudletWaitingList()) {
-			if (rcl.getCloudletId() == cloudletId) {
-				return rcl.getCloudletStatus();
+			if (rcl.getCloudletId() != cloudletId) {
+				continue;
 			}
+			return rcl.getCloudletStatus();
 		}
 
 		return -1;

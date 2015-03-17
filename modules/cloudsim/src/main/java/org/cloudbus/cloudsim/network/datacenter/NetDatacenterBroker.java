@@ -60,16 +60,13 @@ public class NetDatacenterBroker extends SimEntity {
     private List<? extends AppCloudlet> appCloudletList;
 
     /**
-     * The Appcloudlet submitted list.
+     * Big data generation task:
+     *
+     * 1. replace the unused cloudletReceivedList (list of cloudlet) with countCloudletReceived (size of clouets)
+     * 2. remove the unused global variable cloudletSubmittedList
+     * 3. remove the unused global variable appCloudletRecieved
      */
-    private final Map<Integer, Integer> appCloudletRecieved;
-
-    private List<? extends Cloudlet> cloudletSubmittedList;
-
-    /**
-     * The cloudlet received list.
-     */
-    private List<? extends Cloudlet> cloudletReceivedList;
+    private int countCloudletReceived;
 
     /**
      * The cloudlets submitted.
@@ -149,9 +146,6 @@ public class NetDatacenterBroker extends SimEntity {
         setVmsCreatedList(new ArrayList<NetworkVm>());
         setCloudletList(new ArrayList<NetworkCloudlet>());
         setAppCloudletList(new ArrayList<AppCloudlet>());
-        setCloudletSubmittedList(new ArrayList<Cloudlet>());
-        setCloudletReceivedList(new ArrayList<Cloudlet>());
-        appCloudletRecieved = new HashMap<Integer, Integer>();
 
         cloudletsSubmitted = 0;
         setVmsRequested(0);
@@ -294,8 +288,25 @@ public class NetDatacenterBroker extends SimEntity {
      */
     protected void processCloudletReturn(SimEvent ev) {
         Cloudlet cloudlet = (Cloudlet) ev.getData();
-        getCloudletReceivedList().add(cloudlet);
+        countCloudletReceived++;
         cloudletsSubmitted--;
+
+        /**
+         * Big data generation task: free memory of the task stages explictly and cloudlet.
+         */
+        if (cloudlet instanceof NetworkCloudlet) {
+            NetworkCloudlet netCloulet = (NetworkCloudlet)cloudlet;
+            if (netCloulet.stages != null) {
+                for (TaskStage stage : netCloulet.stages) {
+                    stage.currPkt = null;
+                }
+                netCloulet.stages.clear();
+                netCloulet.stages = null;
+            }
+
+            cloudlet = null;
+        }
+
         // all cloudlets executed
         if (getCloudletList().size() == 0 && cloudletsSubmitted == 0 && NetworkConstants.iteration > 10) {
             Log.printConcatLine(CloudSim.clock(), ": ", getName(), ": All Cloudlets executed. Finishing...");
@@ -362,9 +373,12 @@ public class NetDatacenterBroker extends SimEntity {
         for (int i = 0; i < NetworkConstants.MAX_NUM_APPS; i++) {
             this.getAppCloudletList().add(new WorkflowApp(AppCloudlet.APP_Workflow, NetworkConstants.currentAppId, 0, 0, getId()));
 
-            // Updated by xiaoleiy: added logs for better information printing out.
-            LOGGER.debug("[" + datacenter.getName() + "] created workflow app #" + NetworkConstants.currentAppId +
-                    " with datacenter #" + datacenter.getId() + " user #" + getId());
+            // Big data generation task: added logs for better information printing out.
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("[" + datacenter.getName() + "] created workflow app #" + NetworkConstants.currentAppId +
+                        " with datacenter #" + datacenter.getId() + " user #" + getId());
+            }
+
             NetworkConstants.currentAppId++;
         }
         int k = 0;
@@ -384,12 +398,13 @@ public class NetDatacenterBroker extends SimEntity {
                 for (int i = 0; i < app.numbervm; i++) {
                     NetworkCloudlet cloudlet = app.clist.get(i);
                     cloudlet.setUserId(getId());
-                    appCloudletRecieved.put(app.appID, app.numbervm);
-                    getCloudletSubmittedList().add(cloudlet);
                     cloudletsSubmitted++;
 
-                    LOGGER.debug("[" + datacenter.getName() + "] created cloudlet #" + cloudlet.getCloudletId()
-                            + " with datacenter # " + datacenter.getId() + " user #" + cloudlet.getUserId());
+                    // Big data generation task: print out logs only when the debug level logging is enabled
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("[" + datacenter.getName() + "] created cloudlet #" + cloudlet.getCloudletId()
+                                + " with datacenter # " + datacenter.getId() + " user #" + cloudlet.getUserId());
+                    }
 
                     // Sending cloudlet
                     sendNow(getVmsToDatacentersMap().get(this.getVmList().get(0).getId()),
@@ -541,48 +556,6 @@ public class NetDatacenterBroker extends SimEntity {
 
     public <T extends AppCloudlet> void setAppCloudletList(List<T> appCloudletList) {
         this.appCloudletList = appCloudletList;
-    }
-
-    /**
-     * Gets the cloudlet submitted list.
-     *
-     * @param <T> the generic type
-     * @return the cloudlet submitted list
-     */
-    @SuppressWarnings("unchecked")
-    public <T extends Cloudlet> List<T> getCloudletSubmittedList() {
-        return (List<T>) cloudletSubmittedList;
-    }
-
-    /**
-     * Sets the cloudlet submitted list.
-     *
-     * @param <T>                   the generic type
-     * @param cloudletSubmittedList the new cloudlet submitted list
-     */
-    protected <T extends Cloudlet> void setCloudletSubmittedList(List<T> cloudletSubmittedList) {
-        this.cloudletSubmittedList = cloudletSubmittedList;
-    }
-
-    /**
-     * Gets the cloudlet received list.
-     *
-     * @param <T> the generic type
-     * @return the cloudlet received list
-     */
-    @SuppressWarnings("unchecked")
-    public <T extends Cloudlet> List<T> getCloudletReceivedList() {
-        return (List<T>) cloudletReceivedList;
-    }
-
-    /**
-     * Sets the cloudlet received list.
-     *
-     * @param <T>                  the generic type
-     * @param cloudletReceivedList the new cloudlet received list
-     */
-    protected <T extends Cloudlet> void setCloudletReceivedList(List<T> cloudletReceivedList) {
-        this.cloudletReceivedList = cloudletReceivedList;
     }
 
     /**
@@ -746,5 +719,13 @@ public class NetDatacenterBroker extends SimEntity {
 
     public void setLinkDCs(List<NetworkDatacenter> linkDCs) {
         this.linkDCs = linkDCs;
+    }
+
+    public int getCountCloudletReceived() {
+        return countCloudletReceived;
+    }
+
+    public void setCountCloudletReceived(int countCloudletReceived) {
+        this.countCloudletReceived = countCloudletReceived;
     }
 }

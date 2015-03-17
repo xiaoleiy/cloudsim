@@ -200,8 +200,12 @@ public class NetworkDatacenter extends Datacenter {
 				sendNow(cloudlet.getUserId(), tag, data);
 			}
 
-			LOGGER.debug("[" + this.getName() +"] The cloudlet " + cloudlet.getCloudletId()
-					+ " @ VM#" + cloudlet.getVmId() + " User#" + cloudlet.getUserId() + " Host#" + host.getId() + " has been submitted.");
+			// Big data generation task: print out logs only when the debug level logging is enabled
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("[" + this.getName() + "] The cloudlet " + cloudlet.getCloudletId()
+						+ " @ VM#" + cloudlet.getVmId() + " User#" + cloudlet.getUserId() + " Host#" + host.getId() + " has been submitted.");
+			}
+
 		} catch (ClassCastException c) {
 			Log.printLine(getName() + ".processCloudletSubmit(): ClassCastException error.");
 			c.printStackTrace();

@@ -85,4 +85,12 @@ public class DeferredQueue {
 		list.clear();
 	}
 
+	/**
+	 * Big data generation task:
+	 * add method to get event list, avoiding using the iterator (create new objects which slows down the program)
+	 */
+	public List<SimEvent> getList(){
+		return this.list;
+	}
+
 }

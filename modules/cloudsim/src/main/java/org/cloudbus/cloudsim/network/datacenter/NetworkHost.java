@@ -20,6 +20,7 @@ import org.cloudbus.cloudsim.provisioners.BwProvisioner;
 import org.cloudbus.cloudsim.provisioners.RamProvisioner;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -40,8 +41,6 @@ import java.util.Random;
  * @since CloudSim Toolkit 3.0
  */
 public class NetworkHost extends Host {
-
-	public List<NetworkPacket> packetTosendLocal;
 
 	public List<NetworkPacket> packetTosendGlobal;
 
@@ -69,10 +68,14 @@ public class NetworkHost extends Host {
 			VmScheduler vmScheduler) {
 		super(id, ramProvisioner, bwProvisioner, storage, peList, vmScheduler);
 
-		packetrecieved = new ArrayList<NetworkPacket>();
-		packetTosendGlobal = new ArrayList<NetworkPacket>();
-		packetTosendLocal = new ArrayList<NetworkPacket>();
-
+		/**
+		 * Big data generation task:
+		 *
+		 * init the variable packetrecieved and packetTosendGlobal as LinkedList
+		 * for better performance in adding/removing element
+		*/
+		packetrecieved = new LinkedList<NetworkPacket>();
+		packetTosendGlobal = new LinkedList<NetworkPacket>();
 	}
 
 	/**
@@ -111,7 +114,6 @@ public class NetworkHost extends Host {
 	 * 
 	 */
 	private void recvpackets() {
-
 		for (NetworkPacket hs : packetrecieved) {
             hs.pkt.recievetime = CloudSim.clock();
 			// insertthe packet in recievedlist of VM
@@ -120,21 +122,17 @@ public class NetworkHost extends Host {
 					.get(hs.pkt.sender);
 
 			if (pktlist == null) {
-				pktlist = new ArrayList<HostPacket>();
+				pktlist = new LinkedList<HostPacket>();
 				((NetworkCloudletSpaceSharedScheduler) vm.getCloudletScheduler()).pktrecv.put(
 						hs.pkt.sender,
 						pktlist);
 
 			}
 			pktlist.add(hs.pkt);
-
 		}
 		packetrecieved.clear();
+		packetrecieved = new LinkedList<NetworkPacket>();
 	}
-
-
-
-
 
     /**
 	 * Send packet check whether a packet belongs to a local VM or to a VM hosted on other machine.
@@ -143,63 +141,51 @@ public class NetworkHost extends Host {
 	 */
 	private void sendpackets() {
 
+		boolean flag = false;
 		for (Vm vm : super.getVmList()) {
 			for (Entry<Integer, List<HostPacket>> es : ((NetworkCloudletSpaceSharedScheduler) vm
 					.getCloudletScheduler()).pkttosend.entrySet()) {
 				List<HostPacket> pktlist = es.getValue();
 				for (HostPacket pkt : pktlist) {
 					NetworkPacket hpkt = new NetworkPacket(getId(), pkt, vm.getId(), pkt.sender);
-					Vm vm2 = VmList.getById(this.getVmList(), hpkt.recievervmid);
-					if (vm2 != null) {
-						packetTosendLocal.add(hpkt);
+					Vm recvVM = VmList.getById(this.getVmList(), hpkt.recievervmid);
+
+					if (recvVM != null) {
+						flag = true;
+						hpkt.stime = hpkt.rtime;
+						hpkt.pkt.recievetime = CloudSim.clock();
+
+						List<HostPacket> recvPktlist = ((NetworkCloudletSpaceSharedScheduler) recvVM.getCloudletScheduler()).pktrecv
+								.get(hpkt.pkt.sender);
+						if (recvPktlist == null) {
+							recvPktlist = new LinkedList<HostPacket>();
+							((NetworkCloudletSpaceSharedScheduler) recvVM.getCloudletScheduler()).pktrecv.put(
+									hpkt.pkt.sender,
+									recvPktlist);
+						}
+						recvPktlist.add(hpkt.pkt);
 					} else {
 						packetTosendGlobal.add(hpkt);
 					}
 				}
 				pktlist.clear();
-
+				pktlist = null;
 			}
 
-		}
-
-		boolean flag = false;
-
-		for (NetworkPacket hs : packetTosendLocal) {
-			flag = true;
-			hs.stime = hs.rtime;
-            //processPacket(hs);
-			hs.pkt.recievetime = CloudSim.clock();
-			// insertthe packet in recievedlist
-			Vm vm = VmList.getById(getVmList(), hs.pkt.reciever);
-
-			List<HostPacket> pktlist = ((NetworkCloudletSpaceSharedScheduler) vm.getCloudletScheduler()).pktrecv
-					.get(hs.pkt.sender);
-			if (pktlist == null) {
-				pktlist = new ArrayList<HostPacket>();
-				((NetworkCloudletSpaceSharedScheduler) vm.getCloudletScheduler()).pktrecv.put(
-						hs.pkt.sender,
-						pktlist);
-			}
-			pktlist.add(hs.pkt);
-
-		}
-		if (flag) {
-			for (Vm vm : super.getVmList()) {
+			if (flag) {
 				vm.updateVmProcessing(CloudSim.clock(), getVmScheduler().getAllocatedMipsForVm(vm));
 			}
 		}
 
 		// Sending packet to other VMs therefore packet is forwarded to a Edge switch
-		packetTosendLocal.clear();
 		double avband = bandwidth / packetTosendGlobal.size();
 		for (NetworkPacket hs : packetTosendGlobal) {
 			double delay = (1000 * hs.pkt.data) / avband;
 			NetworkConstants.totaldatatransfer += hs.pkt.data;
-
 			CloudSim.send(getDatacenter().getId(), sw.getId(), delay, CloudSimTags.Network_Event_UP, hs);
-			// send to switch with delay
 		}
 		packetTosendGlobal.clear();
+		packetTosendGlobal = new LinkedList<NetworkPacket>();
 	}
 
 	public double getMaxUtilizationAmongVmsPes(Vm vm) {

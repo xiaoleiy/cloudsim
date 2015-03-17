@@ -8,10 +8,7 @@
 
 package org.cloudbus.cloudsim.core;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * This class implements the future event queue used by {@link Simulation}. The event queue uses a
@@ -96,4 +93,14 @@ public class FutureQueue {
 		sortedSet.clear();
 	}
 
+	/**
+	 * Big data generation task: add method to get event queue for better performance of iteration
+	 */
+	public SortedSet<SimEvent> getEventSet() {
+		return sortedSet;
+	}
+
+	public boolean isEmpty() {
+		return this.sortedSet.isEmpty();
+	}
 }
