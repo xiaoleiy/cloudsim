@@ -303,7 +303,6 @@ public class NetDatacenterBroker extends SimEntity {
                 netCloulet.stages.clear();
                 netCloulet.stages = null;
             }
-
             cloudlet = null;
         }
 
